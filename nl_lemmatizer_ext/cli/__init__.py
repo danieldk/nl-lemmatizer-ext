@@ -3,7 +3,7 @@ from radicli import Radicli
 cli = Radicli()
 
 from . import convert
-from . import extend_model
+from . import extend_pipeline
 
 
 def main():

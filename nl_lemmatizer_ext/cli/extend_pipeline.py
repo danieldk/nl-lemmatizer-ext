@@ -9,12 +9,12 @@ from . import cli
 
 
 @cli.command(
-    "extend-model",
+    "extend-pipeline",
     model=Arg(help="spaCy model to extend"),
     lexicon=Arg(help="Lexicon file"),
     model_output=Arg(help="Extended spaCy model"),
 )
-def extend_model(model: str, lexicon: Path, model_output: Path):
+def extend_pipeline(model: str, lexicon: Path, model_output: Path):
     """Add the GiGaNT lemmatizer to a pipeline"""
     nlp = spacy.load(model)
     lexicon: Dict[str, Dict[str, str]] = srsly.read_json(lexicon)

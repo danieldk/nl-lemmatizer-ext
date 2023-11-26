@@ -35,13 +35,17 @@ def ud_pos_tag(pos_tag):
     return pos_tag
 
 
-def skip_form_lemma(form: str, lemma: str) -> bool:
+def skip_form_lemma(*, form: str, lemma: str, lemma_pos: str, ud_pos: str) -> bool:
     # Filter collocations.
     if " " in form:
         return True
 
     # Filter separable verbs.
     if " " in lemma:
+        return True
+
+    # Skip plural noun lemmas.
+    if ud_pos == "NOUN" and "number=pl" in lemma_pos:
         return True
 
     return False
@@ -60,13 +64,16 @@ def convert(gigant_tsv_path: Path, lexicon_path: Path):
         for line in f:
             parts = line.strip().split("\t")
             lemma = parts[1]
-            pos = ud_pos_tag(parts[2])
+            ud_pos = ud_pos_tag(parts[2])
+            lemma_pos = parts[2]
             form = parts[4]
 
-            if pos in FILTER_TAGS:
+            if ud_pos in FILTER_TAGS:
                 continue
 
-            if skip_form_lemma(form, lemma):
+            if skip_form_lemma(
+                form=form, lemma=lemma, lemma_pos=lemma_pos, ud_pos=ud_pos
+            ):
                 continue
 
             lexicon[pos][form] = lemma

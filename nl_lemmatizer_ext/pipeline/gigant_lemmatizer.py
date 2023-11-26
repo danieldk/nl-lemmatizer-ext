@@ -72,8 +72,6 @@ class GigantLemmatizer(Pipe):
                 if self.overwrite or token.lemma == 0:
                     lemma = self.lemmatize(token)
                     if lemma is not None:
-                        if token.lemma_ != lemma:
-                            print(f"{token}: {token.lemma_} -> {lemma}")
                         token.lemma_ = lemma
             return doc
         except Exception as e:

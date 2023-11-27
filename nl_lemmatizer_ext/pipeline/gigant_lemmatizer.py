@@ -87,6 +87,10 @@ class GigantLemmatizer(Pipe):
         self.lexicon = lexicon
 
     def lemmatize(self, token: Token) -> Optional[str]:
+        """Return the lemma for a token.
+
+        token (Token): the token to lemmatize.
+        """
         pos_lexicon = self.lexicon.get(token.pos_)
         if pos_lexicon is None:
             return None

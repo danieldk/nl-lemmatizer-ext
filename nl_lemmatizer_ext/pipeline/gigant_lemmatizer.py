@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Callable, Iterable, Dict, Any, Union
+from typing import Optional, Callable, Iterable, Dict, Any, Union, List
 
 import srsly
 from spacy import Vocab, util, Language
@@ -91,7 +91,27 @@ class GigantLemmatizer(Pipe):
         if pos_lexicon is None:
             return None
 
+        # Try to look up verb forms with separated particles.
+        for particle in self._find_particle(token):
+            lemma = pos_lexicon.get(f"{token.text} {particle.text}")
+            if lemma is not None:
+                return lemma
+
         return pos_lexicon.get(token.text)
+
+    def _find_particle(self, token: Token) -> List[Token]:
+        """Find particles of separable verbs."""
+
+        separated_particles = []
+        # This could be refined to check against the relevant verb types.
+        if token.pos_ != "VERB":
+            return separated_particles
+
+        for child in token.children:
+            if child.dep_ == "compound:prt" and child.tag_ == "VZ|fin":
+                separated_particles.append(child)
+
+        return separated_particles
 
     def to_disk(
         self, path: Union[str, Path], *, exclude: Iterable[str] = SimpleFrozenList()

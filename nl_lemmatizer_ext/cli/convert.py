@@ -37,7 +37,7 @@ def ud_pos_tag(pos_tag):
 
 def skip_form_lemma(*, form: str, lemma: str, lemma_pos: str, ud_pos: str) -> bool:
     # Filter collocations.
-    if " " in form:
+    if ud_pos != "VERB" and " " in form:
         return True
 
     # Filter separable verbs.

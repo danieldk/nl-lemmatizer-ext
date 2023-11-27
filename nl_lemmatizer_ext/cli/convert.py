@@ -76,6 +76,13 @@ def convert(gigant_tsv_path: Path, lexicon_path: Path):
             ):
                 continue
 
-            lexicon[pos][form] = lemma
+            if ud_pos in lexicon:
+                if form in lexicon[ud_pos]:
+                    if lexicon[ud_pos][form] != lemma:
+                        print(
+                            f"Existing entry for {form}/{ud_pos}: {lexicon[ud_pos][form]} -> {lemma}"
+                        )
+
+            lexicon[ud_pos][form] = lemma
 
     srsly.write_json(lexicon_path, lexicon)

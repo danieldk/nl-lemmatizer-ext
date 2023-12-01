@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 def setup_package():
     setup(
-        name="nl-lemmatizer-ext",
+        name="spacy-nl-lemmatizer-ext",
         packages=find_packages(),
     )
 

@@ -91,7 +91,10 @@ class GigantLemmatizer(Pipe):
 
         token (Token): the token to lemmatize.
         """
-        pos_lexicon = self.lexicon.get(token.pos_)
+        # Look up auxiliary/modal verbs using the verb table.
+        pos = "VERB" if token.pos_ == "AUX" else token.pos_
+
+        pos_lexicon = self.lexicon.get(pos)
         if pos_lexicon is None:
             return None
 

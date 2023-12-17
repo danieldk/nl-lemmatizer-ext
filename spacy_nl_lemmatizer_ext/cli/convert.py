@@ -24,6 +24,35 @@ POS_MAPPING = {
 
 FILTER_TAGS = {"COLL", "RES"}
 
+def read_and_convert_gigant(f) -> Dict[str, Dict[str, str]]:
+    lexicon: Dict[str, Dict[str, str]] = defaultdict(dict)
+
+    for line in f:
+        parts = line.strip().split("\t")
+        lemma = parts[1]
+        ud_pos = ud_pos_tag(parts[2])
+        lemma_pos = parts[2]
+        form = parts[4]
+
+        if ud_pos in FILTER_TAGS:
+            continue
+
+        if skip_form_lemma(
+                form=form, lemma=lemma, lemma_pos=lemma_pos, ud_pos=ud_pos
+        ):
+            continue
+
+        if ud_pos in lexicon:
+            if form in lexicon[ud_pos]:
+                if lexicon[ud_pos][form] != lemma:
+                    print(
+                        f"Existing entry for {form}/{ud_pos}: {lexicon[ud_pos][form]} -> {lemma}"
+                    )
+
+        lexicon[ud_pos][form] = lemma
+
+    return lexicon
+
 
 def ud_pos_tag(pos_tag):
     # GiGaNT has POS tags like NOU-C(gender=m,number=sg), for the UD
@@ -61,28 +90,6 @@ def convert(gigant_tsv_path: Path, lexicon_path: Path):
     lexicon: Dict[str, Dict[str, str]] = defaultdict(dict)
 
     with open(gigant_tsv_path, "r", encoding="utf-8") as f:
-        for line in f:
-            parts = line.strip().split("\t")
-            lemma = parts[1]
-            ud_pos = ud_pos_tag(parts[2])
-            lemma_pos = parts[2]
-            form = parts[4]
-
-            if ud_pos in FILTER_TAGS:
-                continue
-
-            if skip_form_lemma(
-                form=form, lemma=lemma, lemma_pos=lemma_pos, ud_pos=ud_pos
-            ):
-                continue
-
-            if ud_pos in lexicon:
-                if form in lexicon[ud_pos]:
-                    if lexicon[ud_pos][form] != lemma:
-                        print(
-                            f"Existing entry for {form}/{ud_pos}: {lexicon[ud_pos][form]} -> {lemma}"
-                        )
-
-            lexicon[ud_pos][form] = lemma
+        lexicon = read_and_convert_gigant(f)
 
     srsly.write_json(lexicon_path, lexicon)

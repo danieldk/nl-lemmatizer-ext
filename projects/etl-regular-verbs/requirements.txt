@@ -1,0 +1,4 @@
+conllu
+spacy
+spacy-nl-lemmatizer-ext
+thinc-apple-ops; sys_platform == 'darwin'

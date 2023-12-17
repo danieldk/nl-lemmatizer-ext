@@ -1,0 +1,154 @@
+title: "Train the edit tree lemmatizer with only regular verb inflections"
+
+vars:
+  gpu: -1
+  model_version: "3.7.0"
+
+directories: ["configs", "assets", "corpus", "lexica", "models", "training"]
+
+assets:
+  - dest: "assets/UD_Dutch-Alpino"
+    git:
+      repo: "https://github.com/UniversalDependencies/UD_Dutch-Alpino"
+      branch: "master"
+      path: ""
+  - dest: "assets/UD_Dutch-LassySmall"
+    git:
+      repo: "https://github.com/UniversalDependencies/UD_Dutch-LassySmall"
+      branch: "master"
+      path: ""
+  - dest: "assets/models/nl_core_news_lg-${vars.model_version}.tar.gz"
+    url: "https://github.com/explosion/spacy-models/releases/download/nl_core_news_lg-${vars.model_version}/nl_core_news_lg-${vars.model_version}.tar.gz"
+    description: "spaCy model to source NER from"
+
+workflows:
+  all:
+    - unpack-model
+    - convert-rbn
+    - convert-gigant-molex
+    - remove-lemma-underscores
+    - convert-lassysmall
+    - train
+    - merge-ner
+    - extend-lemmatizer
+    - evaluate
+
+commands:
+  - name: "unpack-model"
+    help: "Unpack spaCy model to source word vectors and NER from"
+    script:
+      - "tar -C models/ -zxf assets/models/nl_core_news_lg-${vars.model_version}.tar.gz"
+    deps:
+      - "assets/models/nl_core_news_lg-${vars.model_version}.tar.gz"
+    outputs:
+      - "models/nl_core_news_lg-${vars.model_version}"
+  - name: "convert-rbn"
+    help: "Convert Referentiebestand Nederlands"
+    script:
+      - "nl-lemmatizer-util convert-rbn assets/rbn.sql assets/molex_22_02_2022.tsv lexica/irregular.json"
+    deps:
+      - "assets/rbn.sql"
+      - "assets/molex_22_02_2022.tsv"
+    outputs:
+      - "lexica/irregular.json"
+  - name: "convert-gigant-molex"
+    help: "Convert GiGaNT-Molex"
+    script:
+      - "nl-lemmatizer-util convert assets/molex_22_02_2022.tsv lexica/gigant-molex.json"
+    deps:
+      - "assets/molex_22_02_2022.tsv"
+    outputs:
+      - "lexica/gigant-molex.json"
+  - name: "remove-lemma-underscores"
+    help: "Remove underscores from lemmas"
+    script:
+      - "mkdir -p corpus/conllu/train"
+      - "python scripts/remove-lemma-underscores.py assets/UD_Dutch-Alpino/nl_alpino-ud-train.conllu corpus/conllu/train/nl_alpino-ud-train.conllu"
+      - "python scripts/remove-lemma-underscores.py assets/UD_Dutch-LassySmall/nl_lassysmall-ud-train.conllu corpus/conllu/train/nl_lassysmall-ud-train.conllu"
+      - "mkdir -p corpus/conllu/dev"
+      - "python scripts/remove-lemma-underscores.py assets/UD_Dutch-Alpino/nl_alpino-ud-dev.conllu corpus/conllu/dev/nl_alpino-ud-dev.conllu"
+      - "python scripts/remove-lemma-underscores.py assets/UD_Dutch-LassySmall/nl_lassysmall-ud-dev.conllu corpus/conllu/dev/nl_lassysmall-ud-dev.conllu"
+      - "mkdir -p corpus/conllu/test"
+      - "python scripts/remove-lemma-underscores.py assets/UD_Dutch-Alpino/nl_alpino-ud-test.conllu corpus/conllu/test/nl_alpino-ud-test.conllu"
+      - "python scripts/remove-lemma-underscores.py assets/UD_Dutch-LassySmall/nl_lassysmall-ud-test.conllu corpus/conllu/test/nl_lassysmall-ud-test.conllu"
+    deps:
+      - "assets/UD_Dutch-Alpino/"
+      - "assets/UD_Dutch-LassySmall/"
+    outputs:
+      - "corpus/conllu/test/nl_lassysmall-ud-test.conllu"
+      - "corpus/conllu/test/nl_alpino-ud-test.conllu"
+      - "corpus/conllu/train/nl_alpino-ud-train.conllu"
+      - "corpus/conllu/train/nl_lassysmall-ud-train.conllu"
+      - "corpus/conllu/dev/nl_lassysmall-ud-dev.conllu"
+      - "corpus/conllu/dev/nl_alpino-ud-dev.conllu"
+
+  - name: "convert-lassysmall"
+    help: "Convert Lassy Small data to spaCy format"
+    script:
+      - "mkdir -p corpus/spacy/train"
+      - "python -m spacy convert corpus/conllu/train/nl_alpino-ud-train.conllu corpus/spacy/train --n-sents 10 --merge-subtokens"
+      - "python -m spacy convert corpus/conllu/train/nl_lassysmall-ud-train.conllu corpus/spacy/train --n-sents 10 --merge-subtokens"
+      - "mkdir -p corpus/spacy/dev"
+      - "python -m spacy convert corpus/conllu/dev/nl_alpino-ud-dev.conllu corpus/spacy/dev --n-sents 10 --merge-subtokens"
+      - "python -m spacy convert corpus/conllu/dev/nl_lassysmall-ud-dev.conllu corpus/spacy/dev --n-sents 10 --merge-subtokens"
+      - "mkdir -p corpus/spacy/test"
+      - "python -m spacy convert corpus/conllu/test/nl_alpino-ud-test.conllu corpus/spacy/test --n-sents 10 --merge-subtokens"
+      - "python -m spacy convert corpus/conllu/test/nl_lassysmall-ud-test.conllu corpus/spacy/test --n-sents 10 --merge-subtokens"
+    deps:
+      - "corpus/conllu/test/nl_lassysmall-ud-test.conllu"
+      - "corpus/conllu/test/nl_alpino-ud-test.conllu"
+      - "corpus/conllu/train/nl_alpino-ud-train.conllu"
+      - "corpus/conllu/train/nl_lassysmall-ud-train.conllu"
+      - "corpus/conllu/dev/nl_lassysmall-ud-dev.conllu"
+      - "corpus/conllu/dev/nl_alpino-ud-dev.conllu"
+    outputs:
+      - "corpus/spacy/test/nl_lassysmall-ud-test.spacy"
+      - "corpus/spacy/test/nl_alpino-ud-test.spacy"
+      - "corpus/spacy/train/nl_alpino-ud-train.spacy"
+      - "corpus/spacy/train/nl_lassysmall-ud-train.spacy"
+      - "corpus/spacy/dev/nl_lassysmall-ud-dev.spacy"
+      - "corpus/spacy/dev/nl_alpino-ud-dev.spacy"
+
+  - name: "train"
+    help: "Train the pipeline"
+    script:
+      - "python -m spacy train configs/config.cfg --output training/spacy --gpu-id ${vars.gpu} --nlp.lang=nl --paths.train corpus/spacy/train --paths.dev corpus/spacy/dev --paths.vectors models/nl_core_news_lg-${vars.model_version}/nl_core_news_lg/nl_core_news_lg-${vars.model_version} --paths.irregular_lexicon lexica/irregular.json"
+    deps:
+      - "corpus/spacy/test/nl_lassysmall-ud-test.spacy"
+      - "corpus/spacy/test/nl_alpino-ud-test.spacy"
+      - "corpus/spacy/train/nl_alpino-ud-train.spacy"
+      - "corpus/spacy/train/nl_lassysmall-ud-train.spacy"
+      - "corpus/spacy/dev/nl_lassysmall-ud-dev.spacy"
+      - "corpus/spacy/dev/nl_alpino-ud-dev.spacy"
+      - "lexica/irregular.json"
+      - "models/nl_core_news_lg-${vars.model_version}"
+    outputs:
+      - "training/spacy/model-best"
+
+  - name: "merge-ner"
+    help: "Merge NER components from the upstream spacy pipeline"
+    script:
+      - "python scripts/merge-ner.py training/spacy/model-best models/nl_core_news_lg-${vars.model_version}/nl_core_news_lg/nl_core_news_lg-${vars.model_version} models/nl-ud-ner"
+    deps:
+      - "models/nl_core_news_lg-${vars.model_version}"
+      - "training/spacy/model-best"
+    outputs:
+      - "models/nl-ud-ner"
+
+  - name: "extend-lemmatizer"
+    help: "Extend the lemmatizer with the GiGaNT-Molex lemmatizer"
+    script:
+      - "nl-lemmatizer-util extend-pipeline models/nl-ud-ner lexica/gigant-molex.json models/nl-ud-ner-gigant --before lemmatizer"
+    deps:
+      - "models/nl-ud-ner"
+      - "lexica/gigant-molex.json"
+    outputs:
+      - "models/nl-ud-ner-gigant"
+
+  - name: "evaluate"
+    help: "Evaluate the pipeline on the dev corpus."
+    script:
+      - "python -m spacy evaluate models/nl-ud-ner-gigant corpus/spacy/dev"
+    deps:
+      - "models/nl-ud-ner-gigant"
+      - "corpus/spacy/dev"

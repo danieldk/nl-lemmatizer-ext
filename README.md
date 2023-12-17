@@ -33,3 +33,8 @@ Then add the `gigant-molex` pipe to an existing pipeline:
 ```shell
 nl-lemmatizer-util extend-pipeline nl_core_news_lg gigant-molex.json nl_core_news_gigant
 ```
+
+## Authors
+
+This package was developed by Daniël de Kok (Biaffine) and Jeroen van de
+Nieuwenhof (Tolkie).

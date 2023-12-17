@@ -1,4 +1,16 @@
-title: "Train the edit tree lemmatizer with only regular verb inflections"
+title: "Train the lemmatizer without irregular verb inflections"
+description: >
+  This project creates a pipeline that uses lookup-based lemmatization
+  for inflections that are in the GiGaNT-Molex lexicon and the edit
+  tree lemmatizer for word forms that are not in GiGaNT-Molex. Additionally,
+  the edit tree lemmatizer is trained without verbs that have an irregular
+  inflection paradigm.
+
+  Two assets need to be placed in the `assets` directory by hand to use this
+  project. `molex_22_02_2022.tsv` from
+  [GiGaNT-Molex](https://taalmaterialen.ivdnt.org/download/tstc-gigant-molex-c/)
+  and `rbn.sql` from
+  [Referentiebestand Nederlands](https://taalmaterialen.ivdnt.org/download/tstc-referentiebestand-nederlands/).
 
 vars:
   gpu: -1
